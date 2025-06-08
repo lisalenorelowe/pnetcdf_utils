@@ -1,0 +1,8 @@
+name: env_pnetcdf 
+channels:
+  - conda-forge
+dependencies:
+ - nco 
+ - libpnetcdf 
+ - netcdf-fortran
+ - fortran-compiler 

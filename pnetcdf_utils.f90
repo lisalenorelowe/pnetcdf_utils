@@ -21,14 +21,16 @@ contains
   subroutine create_file( filename, im, jm )  
 
     integer, intent(in) :: im, jm 
-    character(len=*), intent(in) :: filename 
-    integer ierr, info
+    character(len=*), intent(in) :: filename
+    integer, save :: x_var, y_var, rad_var
+    integer :: im_dim, jm_dim  
+    integer :: ierr, info
     file_id = -1
 
     call MPI_Info_Create( info, ierr )
     call MPI_Info_Set( info, 'ind_wr_buffer_size', '16777216', ierr )
     ierr = nfmpi_create( MPI_COMM_SELF,trim(filename), IOR( NF_CLOBBER, NF_64BIT_OFFSET ), info, file_id)
-    call chkerr( ierr, 'create NetCDF output file ' // file_name )
+    call chkerr( ierr, 'create NetCDF output file ' // filename )
     call MPI_Info_Free( info, ierr )
    
     ! --- Define dimensions ---
@@ -39,8 +41,8 @@ contains
     call deftat( file_id, 'Conventions','CF-1.6')
   
     ! --- Define a variable ---
-    call defvr1( file_id, im_dim, x_var, 'X', 'x length','km')
-    call defvr1( file_id, jm_dim, y_var, 'Y', 'y length','km')
+    call defvr1( file_id, im_dim, x_var, 'x', 'x length','km')
+    call defvr1( file_id, jm_dim, y_var, 'y', 'y length','km')
     call defvr2( file_id, im_dim, jm_dim, rad_var, 'Rad', 'Radiation','W/m2')
     ! --- End of definition mode --- 
   
@@ -59,8 +61,14 @@ contains
   ! In a concurrent program, each worker process should call
   ! open_file, write_data, close_file.
   subroutine open_file( filename )
-    character(len=*), intent(in) :: filename  
+    character(len=*), intent(in) :: filename 
+    integer :: x_var, y_var, rad_var
+    integer :: im_dim, jm_dim
     integer :: info, ierr
+
+    x_var = 1
+    y_var = 2
+    rad_var = 3
 
     call MPI_Info_Create( info, ierr )
     call MPI_Info_Set( info, 'ind_wr_buffer_size', '16777216', ierr )
@@ -93,14 +101,21 @@ contains
   subroutine write_data( imstart, im, jmstart, jm, x, y, rad)
     integer, intent(in) :: imstart, jmstart
     integer, intent(in) :: im, jm
+    integer :: x_var, y_var, rad_var
+    integer :: im_dim, jm_dim
     real, dimension(im, jm) :: rad 
     real, dimension(im) :: x
-    real, dimension(jm) :: y
+    real, dimension(im) :: y
     integer ierr, variable
     integer(kind=MPI_OFFSET_KIND) STARTS(2),COUNTS(2)
     integer(kind=MPI_OFFSET_KIND) xstart(1),ystart(1)
+    integer(kind=MPI_OFFSET_KIND) xcount(1),ycount(1)
     integer request_count, request
-    integer, dimension(1) :: requests, statuses
+    integer, dimension(3) :: requests, statuses
+
+    x_var = 1
+    y_var = 2
+    rad_var = 3
 
     STARTS( 1 ) = IMSTART
     STARTS( 2 ) = JMSTART
@@ -112,30 +127,17 @@ contains
     xcount( 1 ) = im
     ycount( 1 ) = jm
 
-    request_count = 1
-
-    request_count = request_count + 1
-    ierr = nfmpi_put_vara_real( file_id, y_var, ystart, ycount, y, requests(request_count) )  
+    !write(6,*) file_id, y_var, ystart, ycount, y
+    ierr = nfmpi_put_vara_real_all( file_id, y_var, xstart, xcount, y )  
     call chkerr( ierr, 'write output variable y')
 
-    request_count = request_count + 1
-    ierr = nfmpi_put_vara_real( file_id, x_var, xstart, xcount, x, requests(request_count) )
+    ierr = nfmpi_put_vara_real_all( file_id, x_var, xstart, xcount, x )
     call chkerr( ierr, 'write output variable x')
 
-    request_count = request_count + 1
-    ierr = nfmpi_put_vara_real( file_id, rad_var, starts, counts, rad, requests(request_count) )
+    ierr = nfmpi_put_vara_real_all( file_id, rad_var, starts, counts, Rad )
     call chkerr( ierr, 'write output variable Rad')
 
-    iERR = nfmpi_WAIT_ALL( FILE_ID, REQUEST_COUNT, REQUESTS, STATUSES )
-    CALL CHKERR( iERR, 'implement non-blocking interface' )
-
-    DO REQUEST = 1, REQUEST_COUNT
-      CALL CHKERR( STATUSES( REQUEST ), 'nonblocking call ' )
-    END DO
-
-    ! check status of each nonblocking call
-
-    CALL FLUSH_FILE() ! Flush buffers to disk in case of crash.
+    !CALL FLUSH_FILE() ! Flush buffers to disk in case of crash.
 
     RETURN
   END SUBROUTINE WRITE_DATA

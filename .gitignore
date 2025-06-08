@@ -1,3 +1,8 @@
+#Outputs
+*.nc
+*/*.nc
+
+
 # Prerequisites
 *.d
 

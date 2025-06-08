@@ -1,86 +1,62 @@
 program main 
-  use pnetcdf
-  use mpi
-  use NETCDF_UTILITIES
-  use p
+  use pnetcdf_utils
 
   implicit none
 
-  integer :: IM_DIM, JM_DIM, im, jm 
-  character(len=20) :: FILE_NAME
-  character(len=10) :: message
-  integer :: myid, mysize, ierr, info
-  integer :: RAD_VAR, X_VAR, Y_VAR
-  real, dimension(30, 30) :: Rad
-  real, dimension(30) :: x,y 
-  INTEGER,SAVE :: FILE_ID ! NetCDF ID for file.
+  integer, parameter :: FD = 12
+  integer, parameter :: im=12
+  integer, parameter :: jm=12 
+  integer :: im_dim, jm_dim 
+  integer :: myim, myjm
+  integer :: im_start, im_end
+  integer :: jm_start, jm_end
+  character(len=200) :: filename 
+  integer :: myid, numprocs, ierr, info
+  real, dimension(3, 12) :: Rad
+  real, dimension(3) :: x,y 
 
   ! --- Initialize MPI ---
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, myid, ierr)
-  call MPI_Comm_size(MPI_COMM_WORLD, mysize, ierr)
+  call MPI_Comm_size(MPI_COMM_WORLD, numprocs, ierr)
+  !write(6,*) "Hello from proc # ", myid, "of ", numprocs
 
-  CALL MPI_Info_Create( info, ierr )
-  CALL MPI_Info_Set( info, 'ind_wr_buffer_size', '16777216', ierr )
+  !Just decomp in x
+  call Decomp1D( FD, numprocs, myid, im_start, im_end)
+  !write(6,*) "With nx=", FD, ", proc ", myid, "goes from ", im_start, " to ", im_end
+  jm_start = 1
+  jm_end = FD
+  myim = 3
+  myjm = 12
+
+  !Define chunk of data 
+  Rad = myid
+  x = myid
+  y = myid*10.
 
   ! --- Create the NetCDF file ---
-  FILE_NAME = "example.nc"
+  filename = "example.nc"
 
-  ! CREATE_FILE: Create output NetCDF file with given header data.
-  ! In a concurrent program, only one process should call this routine
-  ! then call CLOSE_FILE then
-  ! worker processes should call OPEN_FILE, WRITE_DATA, CLOSE_FILE.
+  ! Only one process creates the file 
   if(myid.eq.0) then
-    FILE_ID=-1
-    CALL MPI_Info_Create( info, ierr )
-    CALL MPI_Info_Set( info, 'ind_wr_buffer_size', '16777216', ierr )
-    ierr = nfmpi_CREATE( MPI_COMM_SELF,trim(FILE_NAME), IOR( NF_CLOBBER, NF_64BIT_OFFSET ), info, FILE_ID)
-    CALL CHKERR( ierr, 'create NetCDF output file ' // FILE_NAME )
-    CALL MPI_INFO_FREE( INFO, ierr )
- 
-    ! --- Define dimensions ---
-    im=30
-    jm=30
-    CALL DEFDIM( FILE_ID, IM_DIM, 'x', im )
-    CALL DEFDIM( FILE_ID, JM_DIM, 'y', jm )
-  
-    ! --- Define attributes
-    CALL DEFTAT( FILE_ID, 'Conventions','CF-1.6')
-  
-    ! --- Define a variable ---
-    CALL DEFVR1( FILE_ID, IM_DIM, X_VAR, 'X', 'x length','km')
-    CALL DEFVR1( FILE_ID, JM_DIM, Y_VAR, 'Y', 'y length','km')
-    CALL DEFVR2( FILE_ID, IM_DIM, JM_DIM, RAD_VAR, 'Rad', 'Radiation','W/m2')
-    ! --- End of definition mode --- 
-  
     ! --- Write the data ---
-    ierr = nfmpi_enddef(FILE_ID)
-    CALL CHKERR( ierr, 'create NetCDF output header' )
-    ierr = nfmpi_begin_indep_data( FILE_ID )
-    CALL CHKERR( ierr, 'begin independent data access mode' ) 
- 
-    !Write variable
-    x=1.
-    y=2.
-    Rad=3.
-    ierr = nfmpi_put_var_real( FILE_ID, X_VAR, x )
-    call chkerr( ierr, 'write variable x' )
-    ierr = nfmpi_put_var_real( FILE_ID, Y_VAR, y )
-    call chkerr( ierr, 'write variable y' )
-    ierr = nfmpi_put_var_real( FILE_ID, RAD_VAR, Rad )
-    call chkerr( ierr, 'write variable Rad' )
- 
-    !call FLUSH_FILE()
-    ierr = nfmpi_SYNC( FILE_ID )
-    CALL CHKERR( ierr, 'flush buffers to disk ' )
-
+    call create_file(filename, im, jm)
   endif
+
+  !All process open the file
+  call open_file(filename)
+
+  !All write their data
+  call write_data(im_start, myim, jm_start, myjm, x, y, rad)
+ 
   ! --- Close the file ---
+  !All close the file
+  call close_file()
 
   ! --- Print a success message ---
-  if (myid .eq. 0) print *, "SUCCESS: wrote parallel NetCDF file ", FILE_NAME
+  if (myid .eq. 0) print *, "SUCCESS: wrote parallel NetCDF file ", filename 
 
   ! --- Finalize MPI ---
   call MPI_Finalize(ierr)
 
-end program parallel_netcdf_example
+end program 

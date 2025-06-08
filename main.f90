@@ -3,17 +3,18 @@ program main
 
   implicit none
 
-  integer, parameter :: FD = 12
-  integer, parameter :: im=12
-  integer, parameter :: jm=12 
+  integer, parameter :: FD = 5424 
+  integer, parameter :: im= 5424
+  integer, parameter :: jm= 5424 
   integer :: im_dim, jm_dim 
   integer :: myim, myjm
   integer :: im_start, im_end
   integer :: jm_start, jm_end
   character(len=200) :: filename 
+  character(len=13) :: myfile
   integer :: myid, numprocs, ierr, info
-  real, dimension(3, 12) :: Rad
-  real, dimension(3) :: x,y 
+  real, dimension(:, :), allocatable :: Rad
+  real, dimension(:), allocatable :: x,y 
 
   ! --- Initialize MPI ---
   call MPI_Init(ierr)
@@ -23,16 +24,20 @@ program main
 
   !Just decomp in x
   call Decomp1D( FD, numprocs, myid, im_start, im_end)
-  !write(6,*) "With nx=", FD, ", proc ", myid, "goes from ", im_start, " to ", im_end
+  myim = im_end - im_start + 1
+  !write(6,*) "Proc ", myid, "goes from ", im_start, " to ", im_end, "with size=",myim
+  !stop
   jm_start = 1
-  jm_end = FD
-  myim = 3
-  myjm = 12
+  jm_end = jm 
+  myjm = jm  
 
-  !Define chunk of data 
-  Rad = myid
-  x = myid
-  y = myid*10.
+  !Define chunk of data with input files
+  !Rad = myid
+  !x = myid
+  !y = myid*10.
+  write(myfile,'(''input/Rad'',I1.1,''.nc'')') myid+1
+  write(6,*) myfile
+  call read_netcdf(myfile, x, y, Rad)
 
   ! --- Create the NetCDF file ---
   filename = "example.nc"

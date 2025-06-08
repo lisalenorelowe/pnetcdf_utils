@@ -6,3 +6,4 @@ dependencies:
  - libpnetcdf 
  - netcdf-fortran
  - fortran-compiler 
+ - make

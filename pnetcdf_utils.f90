@@ -63,7 +63,6 @@ contains
   subroutine open_file( filename )
     character(len=*), intent(in) :: filename 
     integer :: x_var, y_var, rad_var
-    integer :: im_dim, jm_dim
     integer :: info, ierr
 
     x_var = 1
@@ -102,16 +101,13 @@ contains
     integer, intent(in) :: imstart, jmstart
     integer, intent(in) :: im, jm
     integer :: x_var, y_var, rad_var
-    integer :: im_dim, jm_dim
-    real, dimension(im, jm) :: rad 
-    real, dimension(im) :: x
-    real, dimension(im) :: y
-    integer ierr, variable
+    integer(kind=2), dimension(im, jm) :: rad 
+    integer(kind=2), dimension(im) :: x
+    integer(kind=2), dimension(im) :: y
+    integer ierr
     integer(kind=MPI_OFFSET_KIND) STARTS(2),COUNTS(2)
     integer(kind=MPI_OFFSET_KIND) xstart(1),ystart(1)
     integer(kind=MPI_OFFSET_KIND) xcount(1),ycount(1)
-    integer request_count, request
-    integer, dimension(3) :: requests, statuses
 
     x_var = 1
     y_var = 2
@@ -128,13 +124,13 @@ contains
     ycount( 1 ) = jm
 
     !write(6,*) file_id, y_var, ystart, ycount, y
-    ierr = nfmpi_put_vara_real_all( file_id, y_var, xstart, xcount, y )  
+    ierr = nfmpi_put_vara_int2_all( file_id, y_var, ystart,ycount, y ) 
     call chkerr( ierr, 'write output variable y')
 
-    ierr = nfmpi_put_vara_real_all( file_id, x_var, xstart, xcount, x )
+    ierr = nfmpi_put_vara_int2_all( file_id, x_var, xstart, xcount, x )
     call chkerr( ierr, 'write output variable x')
 
-    ierr = nfmpi_put_vara_real_all( file_id, rad_var, starts, counts, Rad )
+    ierr = nfmpi_put_vara_int2_all( file_id, rad_var, starts, counts, Rad )
     call chkerr( ierr, 'write output variable Rad')
 
     !CALL FLUSH_FILE() ! Flush buffers to disk in case of crash.

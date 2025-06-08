@@ -16,12 +16,12 @@ LIB = -L/home/ec2-user/env_pnetcdf/lib -lpnetcdf -lnetcdf -lnetcdff # Path to Ne
 # Define general compiler and linker flags
 FFLAGS = -O2 -g  # Optimization and debugging flags
 LDFLAGS =
-
+#DFLAGS = -g -Wall -Wextra -pedantic -fimplicit-none -fbacktrace
 # Default target: build the executable
 all: $(EXEC)
 
 $(EXEC): $(SRCS)
-	$(FC) $(FFLAGS) $(INC) $(SRCS) $(LIB) $(LDFLAGS) -o $(EXEC)
+	$(FC) $(DFLAGS) $(FFLAGS) $(INC) $(SRCS) $(LIB) $(LDFLAGS) -o $(EXEC)
 
 # Clean target: remove executable and object files
 clean:

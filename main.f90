@@ -6,15 +6,14 @@ program main
   integer, parameter :: FD = 5424 
   integer, parameter :: im= 5424
   integer, parameter :: jm= 5424 
-  integer :: im_dim, jm_dim 
   integer :: myim, myjm
   integer :: im_start, im_end
   integer :: jm_start, jm_end
   character(len=200) :: filename 
   character(len=13) :: myfile
-  integer :: myid, numprocs, ierr, info
-  real, dimension(:, :), allocatable :: Rad
-  real, dimension(:), allocatable :: x,y 
+  integer :: myid, numprocs, ierr
+  integer(kind=2), dimension(:, :), allocatable :: Rad
+  integer(kind=2), dimension(:), allocatable :: x,y 
 
   ! --- Initialize MPI ---
   call MPI_Init(ierr)
@@ -25,19 +24,22 @@ program main
   !Just decomp in x
   call Decomp1D( FD, numprocs, myid, im_start, im_end)
   myim = im_end - im_start + 1
-  !write(6,*) "Proc ", myid, "goes from ", im_start, " to ", im_end, "with size=",myim
+  write(6,*) "Proc ", myid, "goes from ", im_start, " to ", im_end, "with size=",myim
   !stop
   jm_start = 1
   jm_end = jm 
   myjm = jm  
+  allocate( Rad(myim,myjm),stat=ierr )
+  if(ierr.ne.0) write(6,*) "error in allocating:Rad"
+  allocate( x(myim),stat=ierr )
+  if(ierr.ne.0) write(6,*) "error in allocating:x"
+  allocate( y(myjm),stat=ierr )
+  if(ierr.ne.0) write(6,*) "error in allocating:y"
 
   !Define chunk of data with input files
-  !Rad = myid
-  !x = myid
-  !y = myid*10.
   write(myfile,'(''input/Rad'',I1.1,''.nc'')') myid+1
   write(6,*) myfile
-  call read_netcdf(myfile, x, y, Rad)
+  call read_netcdf(myfile, myim, myjm, x, y, Rad)
 
   ! --- Create the NetCDF file ---
   filename = "example.nc"

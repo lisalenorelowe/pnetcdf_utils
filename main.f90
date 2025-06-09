@@ -42,7 +42,7 @@ program main
   call read_netcdf(myfile, myim, myjm, x, y, Rad)
 
   ! --- Create the NetCDF file ---
-  filename = "example.nc"
+  filename = "stitched.nc"
 
   ! Only one process creates the file 
   if(myid.eq.0) then

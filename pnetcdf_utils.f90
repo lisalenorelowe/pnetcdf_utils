@@ -38,8 +38,22 @@ contains
     call defdim( file_id, jm_dim, 'y', jm )
   
     ! --- Define attributes
-    call deftat( file_id, 'Conventions','CF-1.6')
-  
+    call deftat( file_id, '_FillValue','1023s')
+    call deftat( file_id, 'long_name', 'ABI L1b Radiances')
+    call deftat( file_id, 'standard_name', 'toa_outgoing_radiance_per_unit_wavenumber')
+    call deftat( file_id, '_Unsigned', 'true')
+    call deftat( file_id, 'sensor_band_bit_depth', '10b')
+    call deftat( file_id, 'valid_range', '0s, 1022s')
+    call deftat( file_id, 'scale_factor', '0.1760585f' )
+    call deftat( file_id, 'add_offset', '-5.2392f')
+    call deftat( file_id, 'units', 'mW m-2 sr-1 (cm-1)-1')
+    call deftat( file_id, 'resolution', 'y: 0.000056 rad x: 0.000056 rad')
+    call deftat( file_id, 'coordinates', 'band_id band_wavelength t y x')
+    call deftat( file_id, 'grid_mapping', 'goes_imager_projection')
+    call deftat( file_id, 'cell_methods', 't: point area: point')
+    call deftat( file_id, 'ancillary_variable', 'DQF')
+
+
     ! --- Define a variable ---
     call defvr1( file_id, im_dim, x_var, 'x', 'x length','km')
     call defvr1( file_id, jm_dim, y_var, 'y', 'y length','km')
